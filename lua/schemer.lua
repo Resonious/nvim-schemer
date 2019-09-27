@@ -1,6 +1,14 @@
 colors = require("colors")
 
 
+-- Assume a black background
+local background = colors.new(0, 0, 0)
+-- Minimum acceptable contrast between text and background
+local minimum_contrast = 5.0
+-- "Uncolored" text color
+local uncolored = colors.new("#CCCCCC")
+
+
 -- Get r, g, b floats out of a color.
 local function rgb(color)
   local hex = color:to_rgb()
@@ -15,10 +23,10 @@ end
 -- https://www.w3.org/TR/WCAG20/#relativeluminancedef.
 local function relative_luminance(color)
   local function l(c)
-    if cr <= 0.03928 then
-      return cr/12.92
+    if c <= 0.03928 then
+      return c/12.92
     else
-      return ((cr+0.055)/1.055) ^ 2.4
+      return ((c+0.055)/1.055) ^ 2.4
     end
   end
   local cr, cg, cb = rgb(color)
@@ -87,6 +95,17 @@ local function biased_random(bias)
 end
 
 
+local function colors_are_visible(...)
+  local colors = {...}
+  for _, color in ipairs(colors) do
+    if contrast_ratio(color, background) < minimum_contrast then
+      return false
+    end
+  end
+  return true
+end
+
+
 -- Entrypoint from vim command.
 -- Generates and applies a random colorscheme.
 function SchemerGenerate()
@@ -97,29 +116,27 @@ function SchemerGenerate()
   -- We only support gui colors for now
   vim.api.nvim_set_option("termguicolors", true)
 
-  -- Assume a black background
-  local background = colors.new(0, 0, 0)
-  -- Minimum acceptable contrast between text and background
-  local minimum_contrast = 5.0
-  -- "Uncolored" text color
-  local uncolored = colors.new("#CCCCCC")
-  -- Comment color
-  local comment = colors.new("#606060")
-
 
   ----
   ---- Random generation ----
   ----
   -- TODO we'll need to retry this, so it'll probably get factored out at some point
 
-  -- We will always use this primary color
-  local primary   = colors.new(math.random(360), clamp(math.random() + 0.5), biased_random(0.5))
-  -- Color for strings
-  local strings   = primary:complementary()
-  -- Secondary color
-  local secondary = primary:tints(5)[5]
-  -- Tertiary
-  local tertiary  = primary:tints(5)[3]
+  local primary, strings, secondary, tertiary
+  local retry_count = -1 -- TODO debugging info
+
+  repeat
+    -- We will always use this primary color
+    primary = colors.new(math.random(360), clamp(math.random() + 0.5), biased_random(0.5))
+    -- Color for strings
+    strings   = primary:complementary()
+    -- Secondary color
+    secondary = primary:tints(6)[6]
+    -- Tertiary
+    tertiary  = primary:tints(5)[3]
+
+    retry_count = retry_count + 1
+  until colors_are_visible(primary, strings, secondary, tertiary)
 
 
   -- TODO begin debuggin file crap
@@ -127,10 +144,13 @@ function SchemerGenerate()
     return "("..c.H..", "..c.S..", "..c.L..")"
   end
   file = io.open ("/home/nigel/.config/nvim/test.log", "w")
-  file:write("primary   = "..tostring(primary).." ("..hsl(primary).."\n")
-  file:write("strings   = "..tostring(strings).." ("..hsl(strings).."\n")
-  file:write("secondary = "..tostring(secondary).." ("..hsl(secondary).."\n")
-  file:write("tertiary  = "..tostring(tertiary).." ("..hsl(tertiary).."\n")
+  file:write("------------------------------------------------------\n")
+  file:write("primary   = "..tostring(primary).." ("..hsl(primary).." cr: "..contrast_ratio(primary, background)..":1\n")
+  file:write("strings   = "..tostring(strings).." ("..hsl(strings).." cr: "..contrast_ratio(strings, background)..":1\n")
+  file:write("secondary = "..tostring(secondary).." ("..hsl(secondary).." cr: "..contrast_ratio(secondary, background)..":1\n")
+  file:write("tertiary  = "..tostring(tertiary).." ("..hsl(tertiary).." cr: "..contrast_ratio(tertiary, background)..":1\n")
+  file:write("retried "..retry_count.." times\n")
+  file:write("------------------------------------------------------\n")
   file:close()
   -- TODO end debuggin file crap
 
@@ -146,12 +166,12 @@ function SchemerGenerate()
 
   apply_color(colors.new("#6A6A6A"), "NonText")
   apply_color(colors.new("#EFEFEF"), "Special", "Function")
+  apply_color(colors.new("#606060"), "Comment")
 
   apply_color(primary, "Constant", "Directory", "SpecialKey", "Character", "Boolean")
   apply_color(strings, "String", "Number")
   apply_color(secondary, "Type", "Conditional", "Exception", "Label", "Repeat", "Keyword")
   apply_color(tertiary, "PreProc", "Identifier", "Operator")
-  apply_color(comment, "Comment")
   apply_color(uncolored, "Normal", "Statement", "Title", "Underlined")
 
   vim.api.nvim_command("hi Underlined gui=underline")
