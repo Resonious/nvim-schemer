@@ -240,5 +240,5 @@ function SchemerSave()
   end
   file:close()
 
-  print("Put 'colorscheme schemer' into your init.vim to load your saved theme.")
+  print("Run 'colorscheme schemer' (perhaps put it in your init.vim) to load your saved theme.")
 end
