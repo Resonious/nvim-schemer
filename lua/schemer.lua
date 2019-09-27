@@ -154,13 +154,7 @@ function SchemerGenerate()
     local derivation = choose_from('complementary', 'neighboring')
 
     if derivation == 'complementary' then
-      local tints
-      if primary.L > 0.65 then
-        tints = primary:shades(5)
-      else
-        tints = primary:tints(5)
-      end
-
+      local tints = primary:tints(5)
       strings   = primary:complementary()
       secondary = tints[4]
       tertiary  = tints[2]
@@ -202,7 +196,6 @@ function SchemerGenerate()
   file:write("------------------------------------------------------\n")
   file:close()
   -----------------------------------------------------------
-
 
 
   ----
