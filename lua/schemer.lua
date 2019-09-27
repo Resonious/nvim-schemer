@@ -4,9 +4,11 @@ colors = require("colors")
 -- Assume a black background
 local background = colors.new(0, 0, 0)
 -- Minimum acceptable contrast between text and background
-local minimum_contrast = 5.0
+local minimum_contrast = 6.0
 -- "Uncolored" text color
 local uncolored = colors.new("#CCCCCC")
+
+math.randomseed(os.time())
 
 
 -- Get r, g, b floats out of a color.
@@ -95,7 +97,9 @@ local function biased_random(bias)
 end
 
 
-local function colors_are_visible(...)
+-- Only returns true when all of the passed colors are visible
+-- compared to `background`.
+local function is_visible(...)
   local colors = {...}
   for _, color in ipairs(colors) do
     if contrast_ratio(color, background) < minimum_contrast then
@@ -106,53 +110,98 @@ local function colors_are_visible(...)
 end
 
 
+-- Select randomly from an unweighted list
+local function choose_from(...)
+  local options = {...}
+  return options[math.random(#options)]
+end
+
+
 -- Entrypoint from vim command.
 -- Generates and applies a random colorscheme.
 function SchemerGenerate()
   ----
-  ---- Setup / configuration ----
-  ----
-
-  -- We only support gui colors for now
-  vim.api.nvim_set_option("termguicolors", true)
-
-
-  ----
   ---- Random generation ----
   ----
-  -- TODO we'll need to retry this, so it'll probably get factored out at some point
 
-  local primary, strings, secondary, tertiary
-  local retry_count = -1 -- TODO debugging info
+  local primary, strings, secondary, tertiary, comment
+  local retry_count = -1
+  local messages = {}
 
   repeat
+    messages = {}
+
+    -- This color is usually find for comments
+    comment = colors.new("#858585")
+
     -- We will always use this primary color
-    primary = colors.new(math.random(360), clamp(math.random() + 0.5), biased_random(0.5))
-    -- Color for strings
-    strings   = primary:complementary()
-    -- Secondary color
-    secondary = primary:tints(6)[6]
-    -- Tertiary
-    tertiary  = primary:tints(5)[3]
+    primary = colors.new(math.random(360), clamp(math.random() + 0.25), biased_random(0.5))
+
+    ---- HEURISTICS AND TWEAKS FOR PRIMARY ----
+    -- Can lighten the primary color if it's too dark
+    local lighten_count = 0
+    while not is_visible(primary) do
+      primary = primary:lighten_by(1.1)
+      lighten_count = lighten_count + 1
+    end
+
+    if lighten_count >= 1 then
+      table.insert(messages, "lightened primary color "..lighten_count.." times to make it visible")
+    end
+
+    ---- PICKING SECONDARY COLORS ----
+    -- Choose how to derive the non-primary colros
+    local derivation = choose_from('complementary', 'neighboring')
+
+    if derivation == 'complementary' then
+      local tints
+      if primary.L > 0.65 then
+        tints = primary:shades(5)
+      else
+        tints = primary:tints(5)
+      end
+
+      strings   = primary:complementary()
+      secondary = tints[4]
+      tertiary  = tints[2]
+
+    elseif derivation == 'neighboring' then
+      strings = primary:lighten_by('0.78')
+      secondary, tertiary = primary:neighbors(60)
+    end
+
+    table.insert(messages, "selected "..derivation.." colors")
+
+
+    -- Come up with a good comment color
+    if math.random() < 0.6 then
+      next1, next2 = tertiary:triadic()
+      comment = choose_from(tertiary, next1, next2):lighten_to(0.4):desaturate_to(0.2)
+      table.insert(messages, "tinted comments")
+    end
+
 
     retry_count = retry_count + 1
-  until colors_are_visible(primary, strings, secondary, tertiary)
+  until is_visible(primary, strings, secondary, tertiary)
 
 
-  -- TODO begin debuggin file crap
+  -----------------------------------------------------------
   local function hsl(c)
     return "("..c.H..", "..c.S..", "..c.L..")"
   end
-  file = io.open ("/home/nigel/.config/nvim/test.log", "w")
+  local plugindir = string.match(debug.getinfo(1,'S').source, '^@(.+)/lua/schemer.lua$')
+
+  file = io.open(plugindir.."/last-generated.txt", "w")
   file:write("------------------------------------------------------\n")
-  file:write("primary   = "..tostring(primary).." ("..hsl(primary).." cr: "..contrast_ratio(primary, background)..":1\n")
-  file:write("strings   = "..tostring(strings).." ("..hsl(strings).." cr: "..contrast_ratio(strings, background)..":1\n")
-  file:write("secondary = "..tostring(secondary).." ("..hsl(secondary).." cr: "..contrast_ratio(secondary, background)..":1\n")
-  file:write("tertiary  = "..tostring(tertiary).." ("..hsl(tertiary).." cr: "..contrast_ratio(tertiary, background)..":1\n")
+  file:write("primary   = "..tostring(primary).." "..hsl(primary).." cr: "..contrast_ratio(primary, background)..":1\n")
+  file:write("strings   = "..tostring(strings).." "..hsl(strings).." cr: "..contrast_ratio(strings, background)..":1\n")
+  file:write("secondary = "..tostring(secondary).." "..hsl(secondary).." cr: "..contrast_ratio(secondary, background)..":1\n")
+  file:write("tertiary  = "..tostring(tertiary).." "..hsl(tertiary).." cr: "..contrast_ratio(tertiary, background)..":1\n")
   file:write("retried "..retry_count.." times\n")
+  for _, msg in ipairs(messages) do file:write(msg.."\n") end
   file:write("------------------------------------------------------\n")
   file:close()
-  -- TODO end debuggin file crap
+  -----------------------------------------------------------
 
 
 
@@ -160,19 +209,31 @@ function SchemerGenerate()
   ---- Applying the theme ----
   ----
 
+  vim.api.nvim_set_option("termguicolors", true)
+
   vim.api.nvim_command("hi clear")
   vim.api.nvim_command("syntax reset")
-  vim.api.nvim_command("let g:colors_name = 'schemed'")
+  vim.api.nvim_command("let g:colors_name = 'schemer'")
 
   apply_color(colors.new("#6A6A6A"), "NonText")
   apply_color(colors.new("#EFEFEF"), "Special", "Function")
-  apply_color(colors.new("#606060"), "Comment")
 
   apply_color(primary, "Constant", "Directory", "SpecialKey", "Character", "Boolean")
   apply_color(strings, "String", "Number")
   apply_color(secondary, "Type", "Conditional", "Exception", "Label", "Repeat", "Keyword")
   apply_color(tertiary, "PreProc", "Identifier", "Operator")
   apply_color(uncolored, "Normal", "Statement", "Title", "Underlined")
+  apply_color(comment, "Comment")
 
   vim.api.nvim_command("hi Underlined gui=underline")
+end
+
+
+function SchemerSave()
+  -- TODO
+end
+
+
+function SchemerLoad()
+  -- TODO
 end
