@@ -1,6 +1,6 @@
 # Schemer
 
-Randomly generated color (neo)vim colorschemes.
+Randomly generated (neo)vim colorschemes.
 
 ![schemer-examples](https://user-images.githubusercontent.com/2793160/65826519-9c476180-e2c1-11e9-8889-124d90cdf329.gif)
 
