@@ -174,7 +174,7 @@ function SchemerGenerate()
     -- Come up with a good comment color
     if math.random() < 0.6 then
       next1, next2 = tertiary:triadic()
-      comment = choose_from(tertiary, next1, next2):lighten_to(0.4):desaturate_to(0.2)
+      comment = choose_from(tertiary, next1, next2):lighten_to(0.48):desaturate_to(0.2)
       table.insert(messages, "tinted comments")
     end
 
