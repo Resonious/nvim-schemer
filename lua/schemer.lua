@@ -127,7 +127,7 @@ function SchemerGenerate()
   ---- Random generation ----
   ----
 
-  local primary, strings, secondary, tertiary, comment
+  local primary, literals, secondary, tertiary, comment
   local retry_count = -1
   local messages = {}
   schemer_cmds = {}
@@ -159,12 +159,12 @@ function SchemerGenerate()
 
     if derivation == 'complementary' then
       local tints = primary:tints(5)
-      strings   = primary:complementary()
+      literals   = primary:complementary()
       secondary = tints[4]
       tertiary  = tints[2]
 
     elseif derivation == 'neighboring' then
-      strings = primary:lighten_by('0.78')
+      literals = primary:lighten_by('0.78')
       secondary, tertiary = primary:neighbors(60)
     end
 
@@ -180,7 +180,7 @@ function SchemerGenerate()
 
 
     retry_count = retry_count + 1
-  until is_visible(primary, strings, secondary, tertiary)
+  until is_visible(primary, literals, secondary, tertiary)
 
 
   -----------------------------------------------------------
@@ -190,7 +190,7 @@ function SchemerGenerate()
   file = io.open(schemer_plugindir.."/last-generated.txt", "w")
   file:write("------------------------------------------------------\n")
   file:write("primary   = "..tostring(primary).." "..hsl(primary).." cr: "..contrast_ratio(primary, background)..":1\n")
-  file:write("strings   = "..tostring(strings).." "..hsl(strings).." cr: "..contrast_ratio(strings, background)..":1\n")
+  file:write("literals  = "..tostring(literals).." "..hsl(literals).." cr: "..contrast_ratio(literals, background)..":1\n")
   file:write("secondary = "..tostring(secondary).." "..hsl(secondary).." cr: "..contrast_ratio(secondary, background)..":1\n")
   file:write("tertiary  = "..tostring(tertiary).." "..hsl(tertiary).." cr: "..contrast_ratio(tertiary, background)..":1\n")
   file:write("retried "..retry_count.." times\n")
@@ -213,9 +213,9 @@ function SchemerGenerate()
   apply_color(schemer_cmds, colors.new("#6A6A6A"), "NonText")
   apply_color(schemer_cmds, colors.new("#EFEFEF"), "Special", "Function")
 
-  apply_color(schemer_cmds, primary, "Constant", "Directory", "SpecialKey", "Character", "Boolean")
-  apply_color(schemer_cmds, strings, "String", "Number")
-  apply_color(schemer_cmds, secondary, "Type", "Conditional", "Exception", "Label", "Repeat", "Keyword")
+  apply_color(schemer_cmds, primary, "Repeat", "Conditional", "Type", "Constant", "Directory", "SpecialKey")
+  apply_color(schemer_cmds, literals, "String", "Number", "Character", "Boolean")
+  apply_color(schemer_cmds, secondary, "Exception", "Label", "Keyword")
   apply_color(schemer_cmds, tertiary, "PreProc", "Identifier", "Operator")
   apply_color(schemer_cmds, uncolored, "Normal", "Statement", "Title", "Underlined")
   apply_color(schemer_cmds, comment, "Comment")
