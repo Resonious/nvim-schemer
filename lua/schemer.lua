@@ -119,6 +119,16 @@ local function choose_from(...)
   return options[math.random(#options)]
 end
 
+local function lighten_until_visible(color)
+  local count = 0
+  while not is_visible(color) do
+    color = color:lighten_by(1.1)
+    count = count + 1
+  end
+
+  return color, count
+end
+
 
 -- Entrypoint from vim command.
 -- Generates and applies a random colorscheme.
@@ -128,8 +138,10 @@ function SchemerGenerate()
   ----
 
   local primary, literals, secondary, tertiary, comment
+  local error, warning, info
   local retry_count = -1
   local messages = {}
+  local lighten_count
   schemer_cmds = {}
 
   repeat
@@ -138,17 +150,17 @@ function SchemerGenerate()
     -- This color is usually find for comments
     comment = colors.new("#858585")
 
+    -- Error colors
+    info    = colors.new("#00FFFF")
+    warning = colors.new("#FF8D00")
+    error   = colors.new("#FF0000")
+
     -- We will always use this primary color
     primary = colors.new(math.random(360), clamp(math.random() + 0.25), biased_random(0.5))
 
     ---- HEURISTICS AND TWEAKS FOR PRIMARY ----
     -- Can lighten the primary color if it's too dark
-    local lighten_count = 0
-    while not is_visible(primary) do
-      primary = primary:lighten_by(1.1)
-      lighten_count = lighten_count + 1
-    end
-
+    primary, lighten_count = lighten_until_visible(primary)
     if lighten_count >= 1 then
       table.insert(messages, "lightened primary color "..lighten_count.." times to make it visible")
     end
@@ -156,6 +168,7 @@ function SchemerGenerate()
     ---- PICKING SECONDARY COLORS ----
     -- Choose how to derive the non-primary colros
     local derivation = choose_from('complementary', 'neighboring')
+    table.insert(messages, "selected "..derivation.." colors")
 
     if derivation == 'complementary' then
       local tints = primary:tints(5)
@@ -163,12 +176,25 @@ function SchemerGenerate()
       secondary = tints[4]
       tertiary  = tints[2]
 
+      literals, lighten_count = lighten_until_visible(literals)
+      if lighten_count >= 1 then
+        table.insert(messages, "lightened complement "..lighten_count.." times to make it visible")
+      end
+
     elseif derivation == 'neighboring' then
       literals = primary:lighten_by('0.78')
       secondary, tertiary = primary:neighbors(60)
-    end
 
-    table.insert(messages, "selected "..derivation.." colors")
+      secondary, lighten_count = lighten_until_visible(secondary)
+      if lighten_count >= 1 then
+        table.insert(messages, "lightened secondary "..lighten_count.." times to make it visible")
+      end
+
+      tertiary, lighten_count = lighten_until_visible(tertiary)
+      if lighten_count >= 1 then
+        table.insert(messages, "lightened tertiary "..lighten_count.." times to make it visible")
+      end
+    end
 
 
     -- Come up with a good comment color
@@ -216,9 +242,13 @@ function SchemerGenerate()
   apply_color(schemer_cmds, primary, "Repeat", "Conditional", "Type", "Constant", "Directory", "SpecialKey")
   apply_color(schemer_cmds, literals, "String", "Number", "Character", "Boolean")
   apply_color(schemer_cmds, secondary, "Exception", "Label", "Keyword")
-  apply_color(schemer_cmds, tertiary, "PreProc", "Identifier", "Operator")
-  apply_color(schemer_cmds, uncolored, "Normal", "Statement", "Title", "Underlined")
+  apply_color(schemer_cmds, tertiary, "PreProc", "Identifier", "Operator", "Statement")
+  apply_color(schemer_cmds, uncolored, "Normal", "Title", "Underlined")
+
   apply_color(schemer_cmds, comment, "Comment")
+  apply_color(schemer_cmds, error,   "NeomakeVirtualtextError")
+  apply_color(schemer_cmds, warning, "NeomakeVirtualtextWarning")
+  apply_color(schemer_cmds, info,    "NeomakeVirtualtextInfo")
 
   table.insert(schemer_cmds, "hi Underlined gui=underline")
 
