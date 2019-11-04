@@ -14,17 +14,19 @@ local constant_cmds = {
   "hi CursorLineNr               guifg=#CCCCCC guibg=#292929 gui=bold      ctermfg=255   ctermbg=NONE    cterm=bold",
   "hi TabLine                    guifg=#CCCCCC guibg=NONE    gui=NONE      ctermfg=250   ctermbg=NONE    cterm=NONE",
   "hi TabLineFill                guifg=#CCCCCC guibg=NONE    gui=NONE      ctermfg=250   ctermbg=NONE    cterm=NONE",
-  "hi FoldColumn                 guifg=#0C0C0C guibg=#40BDFF gui=NONE      ctermfg=235   ctermbg=039",
-  "hi Folded                     guifg=#0C0C0C guibg=#40BDFF gui=NONE      ctermfg=235   ctermbg=039",
   "hi LineNr                     guifg=#6A6A6A guibg=#0F0F0F gui=NONE      ctermfg=245   ctermbg=000",
   "hi SignColumn                 guifg=#EFEFEF guibg=NONE    gui=NONE      ctermfg=255   ctermbg=NONE",
   "hi VertSplit                  guifg=#AAAAAA guibg=NONE    gui=NONE      ctermfg=246   ctermbg=000",
   "hi WildMenu                   guifg=#CCCCCC guibg=#292929 gui=NONE      ctermfg=250   ctermbg=008",
   "hi OverLength                 guifg=NONE    guibg=#20272F gui=NONE      ctermfg=NONE  ctermbg=018",
 
-  "hi FoldColumn                 guifg=#0C0C0C guibg=#FF3D23 gui=NONE      ctermfg=235   ctermbg=244",
-  "hi Folded                     guifg=#0C0C0C guibg=#FF3D23 gui=NONE      ctermfg=235   ctermbg=244",
   "hi OverLength                 guifg=NONE    guibg=#641900 gui=NONE      ctermfg=NONE  ctermbg=052",
+
+  "hi CursorColumn               guifg=NONE    guibg=#292929 gui=NONE      ctermfg=NONE  ctermbg=008     cterm=NONE",
+  "hi CursorLine                 guifg=NONE    guibg=#292929 gui=NONE      ctermfg=NONE  ctermbg=008     cterm=NONE",
+  "hi Visual                     guifg=#EFEFEF guibg=#515151 gui=NONE      ctermfg=255   ctermbg=008",
+  "hi VisualNOS                  guifg=#EFEFEF guibg=#515151 gui=NONE      ctermfg=255   ctermbg=008",
+  "hi Todo                       guifg=#DEDD5A guibg=NONE    gui=bold      ctermfg=226   ctermbg=NONE",
 
   "hi link                       markdownLinkText            PreProc",
   "hi link                       markdownHeadingDelimiter    Number",
@@ -110,6 +112,22 @@ local function declare_colort(cmds, name, color)
     settings = settings.." "..key.."="..tostring(value)
   end
   table.insert(cmds, "hi schemer"..name..settings)
+end
+
+-- Applies a color directly without the schemer namespace
+local function apply_colort(cmds, color, ...)
+  local tags = {...}
+  local settings = ""
+
+  if not color['gui'] then color['gui'] = 'NONE' end
+
+  for key,value in pairs(color) do
+    settings = settings.." "..key.."="..tostring(value)
+  end
+
+  for _, tag in ipairs(tags) do
+    table.insert(cmds, "hi "..tag..settings)
+  end
 end
 
 -- Links all of the later arguments to groupname
@@ -262,7 +280,7 @@ function SchemerGenerate()
     if math.random() < 0.6 then
       next1, next2 = tertiary:triadic()
       comment = choose_from(tertiary, next1, next2):lighten_to(0.48):desaturate_to(0.2)
-      panel   = comment:lighten_to(0.25)
+      panel   = comment:lighten_to(0.15)
       table.insert(messages, "tinted comments")
     end
 
@@ -301,8 +319,15 @@ function SchemerGenerate()
   declare_color(schemer_cmds, "Tertiary",   tertiary)
   declare_color(schemer_cmds, "Literals",   literals)
   declare_color(schemer_cmds, "Comment",    comment)
+
   declare_colort(schemer_cmds, "Panel",     { guifg=uncolored, guibg=panel })
   declare_colort(schemer_cmds, "PrimaryBg", { guifg="#0C0C0C", guibg=primary })
+
+  apply_colort(schemer_cmds, { guifg=panel, guibg="#DFDFDF" }, "Cursor", "CursorIM")
+  apply_colort(schemer_cmds, { guifg=panel, guibg=primary }, "FoldColumn", "Folded")
+  apply_colort(schemer_cmds, { guifg=panel, guibg=primary }, "MatchParen")
+  apply_colort(schemer_cmds, { guifg="#0C0C0C", guibg=literals:lighten_to(0.75) }, "Search")
+  apply_colort(schemer_cmds, { guifg="#0C0C0C", guibg=literals:lighten_to(0.95) }, "IncSearch")
 
   declare_color(schemer_cmds, "Error",   error)
   declare_color(schemer_cmds, "Warning", warning)
@@ -320,7 +345,7 @@ function SchemerGenerate()
   link_color(schemer_cmds, "Uncolored", "Normal", "Title", "Underlined")
 
   link_color(schemer_cmds, "Comment", "Comment")
-  link_color(schemer_cmds, "Error",   "NeomakeVirtualtextError")
+  link_color(schemer_cmds, "Error",   "NeomakeVirtualtextError", "Error")
   link_color(schemer_cmds, "Warning", "NeomakeVirtualtextWarning")
   link_color(schemer_cmds, "Info",    "NeomakeVirtualtextInfo")
 
