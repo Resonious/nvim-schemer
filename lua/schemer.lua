@@ -29,7 +29,14 @@ local constant_cmds = {
   "hi PmenuThumb                 guifg=#EFEFEF guibg=#FF3D23 gui=NONE      ctermfg=255   ctermbg=244",
   "hi FoldColumn                 guifg=#0C0C0C guibg=#FF3D23 gui=NONE      ctermfg=235   ctermbg=244",
   "hi Folded                     guifg=#0C0C0C guibg=#FF3D23 gui=NONE      ctermfg=235   ctermbg=244",
-  "hi OverLength                 guifg=NONE    guibg=#641900 gui=NONE      ctermfg=NONE  ctermbg=052"
+  "hi OverLength                 guifg=NONE    guibg=#641900 gui=NONE      ctermfg=NONE  ctermbg=052",
+
+  "hi link                       markdownLinkText            PreProc",
+  "hi link                       markdownHeadingDelimiter    Number",
+  "hi link                       markdownHeader              Number",
+  "hi link                       markdownInlineCode          PreProc",
+  "hi link                       markdownFencedCodeBlock     PreProc",
+  "hi link                       markdownCodeBlock           PreProc",
 }
 
 
@@ -87,18 +94,24 @@ local function contrast_ratio(color1, color2)
   end
 end
 
-
 -- TODO account for cterm?
-local function apply_color(cmds, color, ...)
+
+-- Creates new Schemer-namespaced color group with the given color
+local function declare_color(cmds, name, color)
+  table.insert(
+    cmds,
+    "hi schemer"..name..
+    " guifg="..tostring(color)..
+    " guibg=NONE gui=NONE ctermfg=250"
+  )
+end
+
+-- Links all of the later arguments to groupname
+local function link_color(cmds, groupname, ...)
   local tags = {...}
 
   for _, tag in ipairs(tags) do
-    table.insert(
-      cmds,
-      "hi "..tag..
-      " guifg="..tostring(color)..
-      " guibg=NONE gui=NONE ctermfg=250"
-    )
+    table.insert(cmds, "hi! link "..tag.." schemer"..groupname)
   end
 end
 
@@ -159,6 +172,15 @@ local function lighten_until_visible(color)
   end
 
   return color, count
+end
+
+
+function for_each_schemer_cmd(callback)
+  callback({ purpose = "comment", content = "Constants"})
+  for _, cmd in ipairs(constant_cmds) do callback(cmd) end
+
+  callback({ purpose = "comment", content = "Generated values"})
+  for _, cmd in ipairs(schemer_cmds)  do callback(cmd) end
 end
 
 
@@ -262,28 +284,39 @@ function SchemerGenerate()
   ---- Applying the theme ----
   ----
 
-  apply_color(schemer_cmds, colors.new("#6A6A6A"), "NonText")
-  apply_color(schemer_cmds, colors.new("#EFEFEF"), "Special", "Function")
+  declare_color(schemer_cmds, "DarkGray",   colors.new("#6A6A6A"))
+  declare_color(schemer_cmds, "MediumGray", colors.new("#EFEFEF"))
+  declare_color(schemer_cmds, "Uncolored",  uncolored)
 
-  apply_color(schemer_cmds, primary, "Repeat", "Conditional", "Type", "Constant", "Directory", "SpecialKey")
-  apply_color(schemer_cmds, literals, "String", "Number", "Character", "Boolean")
-  apply_color(schemer_cmds, secondary, "Exception", "Label", "Keyword")
-  apply_color(schemer_cmds, tertiary, "PreProc", "Identifier", "Operator", "Statement")
-  apply_color(schemer_cmds, uncolored, "Normal", "Title", "Underlined")
+  declare_color(schemer_cmds, "Primary",   primary)
+  declare_color(schemer_cmds, "Secondary", secondary)
+  declare_color(schemer_cmds, "Tertiary",  tertiary)
+  declare_color(schemer_cmds, "Literals",  literals)
+  declare_color(schemer_cmds, "Comment",   comment)
 
-  apply_color(schemer_cmds, comment, "Comment")
-  apply_color(schemer_cmds, error,   "NeomakeVirtualtextError")
-  apply_color(schemer_cmds, warning, "NeomakeVirtualtextWarning")
-  apply_color(schemer_cmds, info,    "NeomakeVirtualtextInfo")
+  declare_color(schemer_cmds, "Error",   error)
+  declare_color(schemer_cmds, "Warning", warning)
+  declare_color(schemer_cmds, "Info",    info)
 
-  local apply_cmd = function(cmd)
+  link_color(schemer_cmds, "DarkGray",   "NonText")
+  link_color(schemer_cmds, "MediumGray", "Special", "Function")
+
+  link_color(schemer_cmds, "Primary",   "Repeat", "Conditional", "Type", "Constant", "Directory", "SpecialKey")
+  link_color(schemer_cmds, "Literals",  "String", "Number", "Character", "Boolean")
+  link_color(schemer_cmds, "Secondary", "Exception", "Label", "Keyword")
+  link_color(schemer_cmds, "Tertiary",  "PreProc", "Identifier", "Operator", "Statement")
+  link_color(schemer_cmds, "Uncolored", "Normal", "Title", "Underlined")
+
+  link_color(schemer_cmds, "Comment", "Comment")
+  link_color(schemer_cmds, "Error",   "NeomakeVirtualtextError")
+  link_color(schemer_cmds, "Warning", "NeomakeVirtualtextWarning")
+  link_color(schemer_cmds, "Info",    "NeomakeVirtualtextInfo")
+
+  for_each_schemer_cmd(function(cmd)
     if     type(cmd)   == 'string'      then vim.api.nvim_command(cmd)
     elseif cmd.purpose == 'scheme-name' then vim.api.nvim_command("let g:colors_name = 'schemer'")
     end
-  end
-
-  for _, cmd in ipairs(constant_cmds) do apply_cmd(schemer_cmds) end
-  for _, cmd in ipairs(schemer_cmds)  do apply_cmd(schemer_cmds) end
+  end)
 
   print('Run :SchemerSave "myschemename" to save your colorscheme.')
 end
@@ -298,21 +331,22 @@ function SchemerSave(theme_name)
   if theme_name == nil then theme_name = 'schemer' end
 
   file = io.open(schemer_plugindir.."/colors/"..theme_name..".vim", "w")
+  file:write("\"\n")
   file:write("\" Generated by Schemer\n")
+  file:write("\"\n\n")
 
-  local apply_cmd = function(cmd)
+  for_each_schemer_cmd(function(cmd)
     if type(cmd) == 'table' then
       if cmd.purpose == 'scheme-name' then file:write("let g:colors_name = '"..theme_name.."'")
-      else print("Schemer bug! unknown cmd purpose: "..cmd.purpose)
+      elseif cmd.purpose == 'comment' then file:write("\" "..cmd.content)
+      else print("Schemer bug! unknown cmd: ", cmd)
       end
     else
       file:write(cmd)
     end
     file:write("\n")
-  end
+  end)
 
-  for _, cmd in ipairs(constant_cmds) do apply_cmd(cmd) end
-  for _, cmd in ipairs(schemer_cmds)  do apply_cmd(cmd) end
   file:close()
 
   print("Run 'colorscheme "..theme_name.."' (perhaps put it in your init.vim) to load your saved theme.")
