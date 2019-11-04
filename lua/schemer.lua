@@ -9,9 +9,6 @@ local constant_cmds = {
   "syntax reset",
   "hi Underlined                 gui=underline",
   "hi ColorColumn                guifg=#CCCCCC guibg=#292929 gui=bold      ctermfg=250   ctermbg=008",
-  "hi Pmenu                      guifg=#EFEFEF guibg=#0C0C0C gui=NONE      ctermfg=255   ctermbg=000",
-  "hi PmenuSel                   guifg=#EFEFEF guibg=#40BDFF gui=NONE      ctermfg=255   ctermbg=039",
-  "hi PmenuThumb                 guifg=#EFEFEF guibg=#40BDFF gui=NONE      ctermfg=255   ctermbg=039",
   "hi StatusLine                 guifg=#CCCCCC guibg=NONE    gui=NONE      ctermfg=250   ctermbg=NONE",
   "hi StatusLineNC               guifg=#CCCCCC guibg=NONE    gui=NONE      ctermfg=250   ctermbg=NONE",
   "hi CursorLineNr               guifg=#CCCCCC guibg=#292929 gui=bold      ctermfg=255   ctermbg=NONE    cterm=bold",
@@ -25,8 +22,6 @@ local constant_cmds = {
   "hi WildMenu                   guifg=#CCCCCC guibg=#292929 gui=NONE      ctermfg=250   ctermbg=008",
   "hi OverLength                 guifg=NONE    guibg=#20272F gui=NONE      ctermfg=NONE  ctermbg=018",
 
-  "hi PmenuSel                   guifg=#EFEFEF guibg=#FF3D23 gui=NONE      ctermfg=255   ctermbg=244",
-  "hi PmenuThumb                 guifg=#EFEFEF guibg=#FF3D23 gui=NONE      ctermfg=255   ctermbg=244",
   "hi FoldColumn                 guifg=#0C0C0C guibg=#FF3D23 gui=NONE      ctermfg=235   ctermbg=244",
   "hi Folded                     guifg=#0C0C0C guibg=#FF3D23 gui=NONE      ctermfg=235   ctermbg=244",
   "hi OverLength                 guifg=NONE    guibg=#641900 gui=NONE      ctermfg=NONE  ctermbg=052",
@@ -104,6 +99,17 @@ local function declare_color(cmds, name, color)
     " guifg="..tostring(color)..
     " guibg=NONE gui=NONE ctermfg=250"
   )
+end
+
+local function declare_colort(cmds, name, color)
+  local settings = ""
+
+  if not color['gui'] then color['gui'] = 'NONE' end
+
+  for key,value in pairs(color) do
+    settings = settings.." "..key.."="..tostring(value)
+  end
+  table.insert(cmds, "hi schemer"..name..settings)
 end
 
 -- Links all of the later arguments to groupname
@@ -201,8 +207,9 @@ function SchemerGenerate()
   repeat
     messages = {}
 
-    -- This color is usually find for comments
+    -- This color is usually fine for comments
     comment = colors.new("#858585")
+    panel   = colors.new("#222222")
 
     -- Error colors
     info    = colors.new("#00FFFF")
@@ -255,6 +262,7 @@ function SchemerGenerate()
     if math.random() < 0.6 then
       next1, next2 = tertiary:triadic()
       comment = choose_from(tertiary, next1, next2):lighten_to(0.48):desaturate_to(0.2)
+      panel   = comment:lighten_to(0.25)
       table.insert(messages, "tinted comments")
     end
 
@@ -288,11 +296,13 @@ function SchemerGenerate()
   declare_color(schemer_cmds, "MediumGray", colors.new("#EFEFEF"))
   declare_color(schemer_cmds, "Uncolored",  uncolored)
 
-  declare_color(schemer_cmds, "Primary",   primary)
-  declare_color(schemer_cmds, "Secondary", secondary)
-  declare_color(schemer_cmds, "Tertiary",  tertiary)
-  declare_color(schemer_cmds, "Literals",  literals)
-  declare_color(schemer_cmds, "Comment",   comment)
+  declare_color(schemer_cmds, "Primary",    primary)
+  declare_color(schemer_cmds, "Secondary",  secondary)
+  declare_color(schemer_cmds, "Tertiary",   tertiary)
+  declare_color(schemer_cmds, "Literals",   literals)
+  declare_color(schemer_cmds, "Comment",    comment)
+  declare_colort(schemer_cmds, "Panel",     { guifg=uncolored, guibg=panel })
+  declare_colort(schemer_cmds, "PrimaryBg", { guifg="#0C0C0C", guibg=primary })
 
   declare_color(schemer_cmds, "Error",   error)
   declare_color(schemer_cmds, "Warning", warning)
@@ -300,6 +310,8 @@ function SchemerGenerate()
 
   link_color(schemer_cmds, "DarkGray",   "NonText")
   link_color(schemer_cmds, "MediumGray", "Special", "Function")
+  link_color(schemer_cmds, "Panel",      "Pmenu")
+  link_color(schemer_cmds, "PrimaryBg",  "PmenuSel", "PmenuThumb")
 
   link_color(schemer_cmds, "Primary",   "Repeat", "Conditional", "Type", "Constant", "Directory", "SpecialKey")
   link_color(schemer_cmds, "Literals",  "String", "Number", "Character", "Boolean")
