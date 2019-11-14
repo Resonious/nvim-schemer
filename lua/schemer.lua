@@ -290,11 +290,11 @@ function SchemerGenerate()
 
     elseif derivation == 'nearby' then
       secondary, tertiary = primary:neighbors(30)
-      literals = choose_from_table(choose_from(secondary, tertiary):neighbors(30))
+      literals  = choose_from(secondary:hue_offset(30), tertiary:hue_offset(-30))
 
       secondary = lighten_until_visible(secondary, "secondary", messages)
       tertiary  = lighten_until_visible(tertiary, "tertiary", messages)
-      literals  = lighten_until_visible(tertiary, "literals", messages)
+      literals  = lighten_until_visible(literals, "literals", messages)
     end
 
 
