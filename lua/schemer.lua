@@ -1,5 +1,20 @@
 colors = require("colors")
 
+local fzf_colors_str = [[let g:fzf_colors = {
+    'fg':      ['fg', 'Normal'],
+    'bg':      ['bg', 'Normal'],
+    'hl':      ['fg', 'schemerComment'],
+    'fg+':     ['fg', 'Normal'],
+    'bg+':     ['bg', 'Normal'],
+    'hl+':     ['fg', 'schemerLiterals'],
+    'info':    ['fg', 'schemerTertiary'],
+    'border':  ['fg', 'Ignore'],
+    'prompt':  ['fg', 'schemerPrimary'],
+    'pointer': ['fg', 'schemerSecondary'],
+    'marker':  ['fg', 'schemerSecondary'],
+    'spinner': ['fg', 'schemerSecondary'],
+    'header':  ['fg', 'schemerComment'] }]]
+local fzf_colors_cmd, _ = fzf_colors_str:gsub("\n", '')
 
 -- These commands are applied to every generated theme
 local constant_cmds = {
@@ -34,6 +49,8 @@ local constant_cmds = {
   "hi link                       markdownInlineCode          PreProc",
   "hi link                       markdownFencedCodeBlock     PreProc",
   "hi link                       markdownCodeBlock           PreProc",
+
+  fzf_colors_cmd
 }
 
 
