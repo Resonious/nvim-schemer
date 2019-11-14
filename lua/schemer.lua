@@ -179,7 +179,7 @@ end
 
 
 -- Can make a random number, biased towards the argument
-local function biased_random(bias)
+local function biased_random(bias, adjust)
   local initial = math.random()
   local adjust  = math.random()
   return lerp(initial, bias, adjust)
@@ -200,19 +200,26 @@ end
 
 
 -- Select randomly from an unweighted list
+local function choose_from_table(t)
+  return t[math.random(#t)]
+end
 local function choose_from(...)
   local options = {...}
-  return options[math.random(#options)]
+  return choose_from_table(options)
 end
 
-local function lighten_until_visible(color)
+local function lighten_until_visible(color, name, messages)
   local count = 0
   while not is_visible(color) do
     color = color:lighten_by(1.1)
     count = count + 1
   end
 
-  return color, count
+  if count >= 1 then
+    table.insert(messages, "lightened "..name.." "..count.." times to make it visible")
+  end
+
+  return color
 end
 
 
@@ -236,7 +243,6 @@ function SchemerGenerate()
   local error, warning, info
   local retry_count = -1
   local messages = {}
-  local lighten_count
   schemer_cmds = {}
 
   repeat
@@ -252,44 +258,43 @@ function SchemerGenerate()
     error   = colors.new("#FF0000")
 
     -- We will always use this primary color
-    primary = colors.new(math.random(360), clamp(math.random() + 0.25), biased_random(0.5))
+    primary = colors.new(math.random(360), clamp(math.random() + 0.22), biased_random(0.5, 0.5))
 
     ---- HEURISTICS AND TWEAKS FOR PRIMARY ----
     -- Can lighten the primary color if it's too dark
-    primary, lighten_count = lighten_until_visible(primary)
-    if lighten_count >= 1 then
-      table.insert(messages, "lightened primary color "..lighten_count.." times to make it visible")
-    end
+    primary = lighten_until_visible(primary, "primary", messages)
 
     ---- PICKING SECONDARY COLORS ----
     -- Choose how to derive the non-primary colros
-    local derivation = choose_from('complementary', 'neighboring')
+    local derivation = choose_from('complementary', 'neighboring', 'nearby')
     table.insert(messages, "selected "..derivation.." colors")
 
     if derivation == 'complementary' then
       local tints = primary:tints(5)
-      literals   = primary:complementary()
-      secondary = tints[4]
-      tertiary  = tints[2]
+      literals    = primary:complementary()
+      secondary   = tints[4]
+      tertiary    = tints[2]
 
-      literals, lighten_count = lighten_until_visible(literals)
-      if lighten_count >= 1 then
-        table.insert(messages, "lightened complement "..lighten_count.." times to make it visible")
-      end
+      literals    = lighten_until_visible(literals, "compliment", messages)
 
     elseif derivation == 'neighboring' then
       literals = primary:lighten_by('0.78')
-      secondary, tertiary = primary:neighbors(60)
-
-      secondary, lighten_count = lighten_until_visible(secondary)
-      if lighten_count >= 1 then
-        table.insert(messages, "lightened secondary "..lighten_count.." times to make it visible")
+      if math.random() < 0.5 then
+        tertiary, secondary = primary:neighbors(60)
+      else
+        secondary, tertiary = primary:neighbors(60)
       end
 
-      tertiary, lighten_count = lighten_until_visible(tertiary)
-      if lighten_count >= 1 then
-        table.insert(messages, "lightened tertiary "..lighten_count.." times to make it visible")
-      end
+      secondary = lighten_until_visible(secondary, "secondary", messages)
+      tertiary  = lighten_until_visible(tertiary, "tertiary", messages)
+
+    elseif derivation == 'nearby' then
+      secondary, tertiary = primary:neighbors(30)
+      literals = choose_from_table(choose_from(secondary, tertiary):neighbors(30))
+
+      secondary = lighten_until_visible(secondary, "secondary", messages)
+      tertiary  = lighten_until_visible(tertiary, "tertiary", messages)
+      literals  = lighten_until_visible(tertiary, "literals", messages)
     end
 
 
