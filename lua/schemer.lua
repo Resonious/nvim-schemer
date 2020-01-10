@@ -347,7 +347,7 @@ function SchemerGenerate()
 
   apply_colort(schemer_cmds, { guifg=panel, guibg="#DFDFDF" }, "Cursor", "CursorIM")
   apply_colort(schemer_cmds, { guifg=panel, guibg=primary }, "FoldColumn", "Folded")
-  apply_colort(schemer_cmds, { guifg=panel, guibg=primary }, "MatchParen")
+  apply_colort(schemer_cmds, { guifg=primary, guibg=panel, gui="bold,underline" }, "MatchParen")
   apply_colort(schemer_cmds, { guifg="#0C0C0C", guibg=literals:lighten_to(0.75) }, "Search")
   apply_colort(schemer_cmds, { guifg="#0C0C0C", guibg=literals:lighten_to(0.95) }, "IncSearch")
 
