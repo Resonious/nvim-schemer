@@ -377,6 +377,8 @@ function SchemerGenerate()
     end
   end)
 
+  vim.api.nvim_command("doautocmd ColorScheme")
+
   print('Run :SchemerSave "myschemename" to save your colorscheme.')
 end
 
