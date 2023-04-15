@@ -24,8 +24,6 @@ local constant_cmds = {
   "syntax reset",
   "hi Underlined                 gui=underline",
   "hi ColorColumn                guifg=#CCCCCC guibg=#292929 gui=bold      ctermfg=250   ctermbg=008",
-  "hi StatusLine                 guifg=#CCCCCC guibg=NONE    gui=NONE      ctermfg=250   ctermbg=NONE",
-  "hi StatusLineNC               guifg=#CCCCCC guibg=NONE    gui=NONE      ctermfg=250   ctermbg=NONE",
   "hi CursorLineNr               guifg=#CCCCCC guibg=#292929 gui=bold      ctermfg=255   ctermbg=NONE    cterm=bold",
   "hi TabLine                    guifg=#CCCCCC guibg=NONE    gui=NONE      ctermfg=250   ctermbg=NONE    cterm=NONE",
   "hi TabLineFill                guifg=#CCCCCC guibg=NONE    gui=NONE      ctermfg=250   ctermbg=NONE    cterm=NONE",
@@ -355,7 +353,7 @@ function SchemerGenerate()
   declare_color(schemer_cmds, "Warning", warning)
   declare_color(schemer_cmds, "Info",    info)
 
-  link_color(schemer_cmds, "DarkGray",   "NonText")
+  link_color(schemer_cmds, "DarkGray",   "NonText", "CocHintSign")
   link_color(schemer_cmds, "MediumGray", "Special", "Function")
   link_color(schemer_cmds, "Panel",      "Pmenu")
   link_color(schemer_cmds, "PrimaryBg",  "PmenuSel", "PmenuThumb")
@@ -366,7 +364,7 @@ function SchemerGenerate()
   link_color(schemer_cmds, "Tertiary",  "PreProc", "Identifier", "Operator", "Statement")
   link_color(schemer_cmds, "Uncolored", "Normal", "Title", "Underlined")
 
-  link_color(schemer_cmds, "Comment", "Comment")
+  link_color(schemer_cmds, "Comment", "Comment", "StatusLine", "StatusLineNC")
   link_color(schemer_cmds, "Error",   "NeomakeVirtualtextError", "Error")
   link_color(schemer_cmds, "Warning", "NeomakeVirtualtextWarning")
   link_color(schemer_cmds, "Info",    "NeomakeVirtualtextInfo")
