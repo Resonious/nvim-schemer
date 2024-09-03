@@ -1,4 +1,4 @@
-colors = require("colors")
+local colors = require("colors")
 
 local fzf_colors_str = [[let g:fzf_colors = {
     'fg':      ['fg', 'Normal'],
@@ -221,7 +221,7 @@ local function lighten_until_visible(color, name, messages)
 end
 
 
-function for_each_schemer_cmd(callback)
+local function for_each_schemer_cmd(callback)
   callback({ purpose = "comment", content = "Constants"})
   for _, cmd in ipairs(constant_cmds) do callback(cmd) end
 
@@ -313,16 +313,18 @@ function SchemerGenerate()
   local function hsl(c)
     return "("..c.H..", "..c.S..", "..c.L..")"
   end
-  file = io.open(schemer_plugindir.."/last-generated.txt", "w")
-  file:write("------------------------------------------------------\n")
-  file:write("primary   = "..tostring(primary).." "..hsl(primary).." cr: "..contrast_ratio(primary, background)..":1\n")
-  file:write("literals  = "..tostring(literals).." "..hsl(literals).." cr: "..contrast_ratio(literals, background)..":1\n")
-  file:write("secondary = "..tostring(secondary).." "..hsl(secondary).." cr: "..contrast_ratio(secondary, background)..":1\n")
-  file:write("tertiary  = "..tostring(tertiary).." "..hsl(tertiary).." cr: "..contrast_ratio(tertiary, background)..":1\n")
-  file:write("retried "..retry_count.." times\n")
-  for _, msg in ipairs(messages) do file:write(msg.."\n") end
-  file:write("------------------------------------------------------\n")
-  file:close()
+  local file = io.open(schemer_plugindir.."/last-generated.txt", "w")
+  if file then
+    file:write("------------------------------------------------------\n")
+    file:write("primary   = "..tostring(primary).." "..hsl(primary).." cr: "..contrast_ratio(primary, background)..":1\n")
+    file:write("literals  = "..tostring(literals).." "..hsl(literals).." cr: "..contrast_ratio(literals, background)..":1\n")
+    file:write("secondary = "..tostring(secondary).." "..hsl(secondary).." cr: "..contrast_ratio(secondary, background)..":1\n")
+    file:write("tertiary  = "..tostring(tertiary).." "..hsl(tertiary).." cr: "..contrast_ratio(tertiary, background)..":1\n")
+    file:write("retried "..retry_count.." times\n")
+    for _, msg in ipairs(messages) do file:write(msg.."\n") end
+    file:write("------------------------------------------------------\n")
+    file:close()
+  end
   -----------------------------------------------------------
 
 
@@ -349,6 +351,7 @@ function SchemerGenerate()
   apply_colort(schemer_cmds, { guifg=panel, guibg=literals:lighten_to(0.65) }, "Search")
   apply_colort(schemer_cmds, { guifg="#0C0C0C", guibg=primary }, "CurSearch")
   apply_colort(schemer_cmds, { guifg="#0C0C0C", guibg=literals:lighten_to(0.85) }, "IncSearch")
+  apply_colort(schemer_cmds, { guifg=uncolored, guibg="NONE" }, "Normal")
 
   declare_color(schemer_cmds, "Error",   error)
   declare_color(schemer_cmds, "Warning", warning)
@@ -363,7 +366,7 @@ function SchemerGenerate()
   link_color(schemer_cmds, "Literals",  "String", "Number", "Character", "Boolean")
   link_color(schemer_cmds, "Secondary", "Exception", "Label", "Keyword")
   link_color(schemer_cmds, "Tertiary",  "PreProc", "Identifier", "Operator", "Statement")
-  link_color(schemer_cmds, "Uncolored", "Normal", "Title", "Underlined")
+  link_color(schemer_cmds, "Uncolored", "Title", "Underlined")
 
   link_color(schemer_cmds, "Comment", "Comment", "StatusLine", "StatusLineNC")
   link_color(schemer_cmds, "Error",   "NeomakeVirtualtextError", "Error")
@@ -378,7 +381,7 @@ function SchemerGenerate()
 
   vim.api.nvim_command("doautocmd ColorScheme")
 
-  print('Run :SchemerSave "myschemename" to save your colorscheme.')
+  -- print('Run :SchemerSave "myschemename" to save your colorscheme.')
 end
 
 
